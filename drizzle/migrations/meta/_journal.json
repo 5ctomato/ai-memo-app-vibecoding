@@ -15,6 +15,13 @@
       "when": 1760417583223,
       "tag": "0001_careful_gabe_jones",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1760427483853,
+      "tag": "0002_volatile_gabe_jones",
+      "breakpoints": true
     }
   ]
 }

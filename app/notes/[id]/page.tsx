@@ -6,6 +6,7 @@
 
 import { getNoteById } from '@/lib/actions/notes'
 import { NoteDetail } from '@/components/notes/NoteDetail'
+import SummarySection from '@/components/notes/SummarySection'
 import { notFound } from 'next/navigation'
 import { Suspense } from 'react'
 
@@ -38,9 +39,24 @@ export default async function NoteDetailPage({ params }: NoteDetailPageProps) {
 
   return (
     <div className="container mx-auto px-4 py-8">
-      <Suspense fallback={<div>로딩 중...</div>}>
-        <NoteDetail note={result.data} />
-      </Suspense>
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        {/* 노트 상세 내용 */}
+        <div className="lg:col-span-2">
+          <Suspense fallback={<div>로딩 중...</div>}>
+            <NoteDetail note={result.data} />
+          </Suspense>
+        </div>
+        
+        {/* AI 요약 섹션 */}
+        <div className="lg:col-span-1">
+          <Suspense fallback={<div>요약 로딩 중...</div>}>
+            <SummarySection 
+              noteId={result.data.id} 
+              noteContent={result.data.content} 
+            />
+          </Suspense>
+        </div>
+      </div>
     </div>
   )
 }

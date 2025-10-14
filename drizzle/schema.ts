@@ -51,3 +51,19 @@ export const noteTags = pgTable('note_tags', {
   tagId: uuid('tag_id').notNull().references(() => tags.id, { onDelete: 'cascade' }),
   createdAt: timestamp('created_at').defaultNow().notNull(),
 });
+
+// AI 요약 테이블
+export const summaries = pgTable('summaries', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  noteId: uuid('note_id').notNull().references(() => notes.id, { onDelete: 'cascade' }),
+  model: text('model').notNull(), // 사용된 AI 모델 (예: gemini-2.0-flash-001)
+  content: text('content').notNull(), // 요약 내용
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+}, (table) => ({
+  // 노트별 요약 조회를 위한 인덱스
+  noteIdIdx: index('summaries_note_id_idx').on(table.noteId),
+  // 최신 요약 조회를 위한 인덱스
+  createdAtIdx: index('summaries_created_at_idx').on(table.createdAt),
+  // 복합 인덱스: 노트별 + 생성일시
+  noteCreatedIdx: index('summaries_note_created_idx').on(table.noteId, table.createdAt),
+}));

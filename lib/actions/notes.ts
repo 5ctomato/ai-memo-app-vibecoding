@@ -9,10 +9,11 @@
 import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
 import { db } from '@/lib/db'
-import { notes, users } from '@/drizzle/schema'
+import { notes, users, summaries } from '@/drizzle/schema'
 import { createServerClient } from '@/lib/supabase/server'
 import { z } from 'zod'
 import { desc, asc, eq, count, or, like } from 'drizzle-orm'
+import { getGeminiClient } from '@/lib/ai/gemini'
 
 // 노트 생성 스키마 정의
 const createNoteSchema = z.object({
@@ -854,6 +855,184 @@ export async function searchNotes(params: {
     return {
       success: false,
       error: `노트 검색 중 오류가 발생했습니다: ${error instanceof Error ? error.message : '알 수 없는 오류'}`
+    }
+  }
+}
+
+// AI 요약 생성 Server Action
+export async function generateSummary(noteId: string) {
+  try {
+    console.log('generateSummary 함수 시작, 노트 ID:', noteId)
+    
+    // UUID 형식 검증
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+    if (!uuidRegex.test(noteId)) {
+      return {
+        success: false,
+        error: '유효하지 않은 노트 ID입니다.'
+      }
+    }
+    
+    // 임시 사용자 ID (실제로는 인증된 사용자 ID를 사용해야 함)
+    const userId = '00000000-0000-0000-0000-000000000000'
+    
+    // 노트 존재 여부 및 권한 확인
+    const [existingNote] = await db
+      .select({
+        id: notes.id,
+        title: notes.title,
+        content: notes.content,
+        userId: notes.userId
+      })
+      .from(notes)
+      .where(eq(notes.id, noteId))
+      .limit(1)
+    
+    if (!existingNote) {
+      return {
+        success: false,
+        error: '노트를 찾을 수 없습니다.'
+      }
+    }
+    
+    // 노트 내용이 비어있는지 확인
+    if (!existingNote.content || existingNote.content.trim().length === 0) {
+      return {
+        success: false,
+        error: '요약할 내용이 없습니다. 노트에 내용을 작성해주세요.'
+      }
+    }
+    
+    console.log('노트 내용 확인 완료, 요약 생성 시작')
+    
+    // GeminiClient를 사용하여 요약 생성
+    const geminiClient = getGeminiClient()
+    const summaryResult = await geminiClient.generateSummary(existingNote.content)
+    
+    console.log('요약 생성 성공:', summaryResult.data)
+    
+    // 기존 요약이 있는지 확인하고 삭제 (최신 요약만 유지)
+    await db
+      .delete(summaries)
+      .where(eq(summaries.noteId, noteId))
+    
+    // 새로운 요약을 데이터베이스에 저장
+    const [newSummary] = await db
+      .insert(summaries)
+      .values({
+        noteId: noteId,
+        model: summaryResult.model,
+        content: summaryResult.data,
+      })
+      .returning()
+    
+    console.log('요약 저장 성공:', newSummary)
+    
+    // 캐시 무효화
+    revalidatePath(`/notes/${noteId}`)
+    
+    return {
+      success: true,
+      data: {
+        summary: newSummary,
+        usage: summaryResult.usage,
+        model: summaryResult.model
+      }
+    }
+    
+  } catch (error) {
+    console.error('AI 요약 생성 오류:', error)
+    console.error('오류 상세:', error instanceof Error ? error.message : error)
+    
+    // Gemini API 관련 에러 처리
+    if (error instanceof Error) {
+      if (error.message.includes('token limit')) {
+        return {
+          success: false,
+          error: '노트 내용이 너무 깁니다. 더 짧은 내용으로 요약을 시도해주세요.'
+        }
+      }
+      
+      if (error.message.includes('API')) {
+        return {
+          success: false,
+          error: 'AI 서비스에 일시적인 문제가 발생했습니다. 잠시 후 다시 시도해주세요.'
+        }
+      }
+    }
+    
+    return {
+      success: false,
+      error: `요약 생성 중 오류가 발생했습니다: ${error instanceof Error ? error.message : '알 수 없는 오류'}`
+    }
+  }
+}
+
+// 노트의 요약 조회 Server Action
+export async function getNoteSummary(noteId: string) {
+  try {
+    console.log('getNoteSummary 함수 시작, 노트 ID:', noteId)
+    
+    // UUID 형식 검증
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+    if (!uuidRegex.test(noteId)) {
+      return {
+        success: false,
+        error: '유효하지 않은 노트 ID입니다.'
+      }
+    }
+    
+    // 임시 사용자 ID (실제로는 인증된 사용자 ID를 사용해야 함)
+    const userId = '00000000-0000-0000-0000-000000000000'
+    
+    // 노트 존재 여부 확인
+    const [existingNote] = await db
+      .select({ id: notes.id, userId: notes.userId })
+      .from(notes)
+      .where(eq(notes.id, noteId))
+      .limit(1)
+    
+    if (!existingNote) {
+      return {
+        success: false,
+        error: '노트를 찾을 수 없습니다.'
+      }
+    }
+    
+    // 요약 조회 (최신 요약)
+    const [summary] = await db
+      .select({
+        id: summaries.id,
+        model: summaries.model,
+        content: summaries.content,
+        createdAt: summaries.createdAt,
+      })
+      .from(summaries)
+      .where(eq(summaries.noteId, noteId))
+      .orderBy(desc(summaries.createdAt))
+      .limit(1)
+    
+    if (!summary) {
+      return {
+        success: true,
+        data: null // 요약이 없음
+      }
+    }
+    
+    console.log('요약 조회 성공:', summary)
+    
+    return {
+      success: true,
+      data: summary
+    }
+    
+  } catch (error) {
+    console.error('요약 조회 오류:', error)
+    console.error('오류 상세:', error instanceof Error ? error.message : error)
+    
+    return {
+      success: false,
+      error: `요약 조회 중 오류가 발생했습니다: ${error instanceof Error ? error.message : '알 수 없는 오류'}`
     }
   }
 }

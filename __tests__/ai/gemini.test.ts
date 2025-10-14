@@ -1,5 +1,4 @@
 // __tests__/ai/gemini.test.ts
-// Gemini API 클라이언트 단위 테스트
 // API 클라이언트의 각 메서드별 테스트 및 에러 핸들링 검증
 // 관련 파일: lib/ai/gemini.ts
 
@@ -8,11 +7,11 @@ import { GeminiClient, getGeminiClient } from '../../lib/ai/gemini';
 // Gemini API 모킹
 jest.mock('@google/genai', () => {
   const mockGenerateContent = jest.fn();
-  const mockModel = {
+  const mockModels = {
     generateContent: mockGenerateContent,
   };
   const mockClient = {
-    getGenerativeModel: jest.fn(() => mockModel),
+    models: mockModels,
   };
   const mockGoogleGenAI = jest.fn(() => mockClient);
 
@@ -23,9 +22,8 @@ jest.mock('@google/genai', () => {
 
 // 모킹된 함수들을 가져오기
 const { GoogleGenAI } = require('@google/genai');
-const mockClient = new GoogleGenAI();
-const mockModel = mockClient.getGenerativeModel();
-const mockGenerateContent = mockModel.generateContent;
+const mockClientInstance = new GoogleGenAI();
+const mockGenerateContent = mockClientInstance.models.generateContent;
 
 // 환경변수 모킹
 jest.mock('../../lib/env', () => ({
@@ -40,7 +38,6 @@ describe('GeminiClient', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     mockGenerateContent.mockClear();
-    mockClient.getGenerativeModel.mockClear();
     client = new GeminiClient();
   });
 
@@ -65,47 +62,35 @@ describe('GeminiClient', () => {
 
   describe('토큰 카운팅', () => {
     it('텍스트의 토큰 수를 대략적으로 계산해야 함', () => {
-      const text = 'Hello world test';
-      const tokenCount = (client as any).countTokens(text);
-      
-      expect(tokenCount).toBeGreaterThan(0);
-      expect(typeof tokenCount).toBe('number');
+      const text = 'Hello, world!';
+      const tokens = (client as any).countTokens(text);
+      expect(tokens).toBeGreaterThan(0);
     });
 
     it('한국어 텍스트도 토큰 수를 계산해야 함', () => {
-      const text = '안녕하세요 테스트입니다';
-      const tokenCount = (client as any).countTokens(text);
-      
-      expect(tokenCount).toBeGreaterThan(0);
-      expect(typeof tokenCount).toBe('number');
+      const text = '안녕하세요, 세상!';
+      const tokens = (client as any).countTokens(text);
+      expect(tokens).toBeGreaterThan(0);
     });
   });
 
   describe('토큰 제한 검증', () => {
     it('토큰 제한을 초과하면 에러를 던져야 함', () => {
-      // 매우 긴 텍스트 생성 (8k 토큰 초과)
-      const longText = 'test '.repeat(10000);
-      
-      expect(() => {
-        (client as any).validateTokenLimit(longText);
-      }).toThrow('Text exceeds token limit');
+      // 공백으로 분리된 단어들을 만들어서 토큰 수를 증가시킴
+      const words = Array(8001).fill('word').join(' '); // 8001개의 단어
+      expect(() => (client as any).validateTokenLimit(words)).toThrow('Text exceeds token limit');
     });
 
     it('토큰 제한 내의 텍스트는 통과해야 함', () => {
-      const shortText = 'Hello world';
-      
-      expect(() => {
-        (client as any).validateTokenLimit(shortText);
-      }).not.toThrow();
+      const shortText = 'a'.repeat(100);
+      expect(() => (client as any).validateTokenLimit(shortText)).not.toThrow();
     });
   });
 
   describe('generateText', () => {
     it('정상적인 텍스트 생성이 작동해야 함', async () => {
       const mockResponse = {
-        response: {
-          text: jest.fn().mockReturnValue('Generated text response'),
-        },
+        text: 'Generated text response',
       };
 
       mockGenerateContent.mockResolvedValue(mockResponse);
@@ -130,9 +115,7 @@ describe('GeminiClient', () => {
   describe('generateSummary', () => {
     it('노트 내용을 요약해야 함', async () => {
       const mockResponse = {
-        response: {
-          text: jest.fn().mockReturnValue('• 요약 포인트 1\n• 요약 포인트 2\n• 요약 포인트 3'),
-        },
+        text: '• 요약 포인트 1\n• 요약 포인트 2\n• 요약 포인트 3',
       };
 
       mockGenerateContent.mockResolvedValue(mockResponse);
@@ -142,7 +125,10 @@ describe('GeminiClient', () => {
 
       expect(result.data).toContain('요약');
       expect(mockGenerateContent).toHaveBeenCalledWith(
-        expect.stringContaining('다음 노트 내용을 3-6개의 불릿 포인트로 요약해주세요')
+        expect.objectContaining({
+          model: 'gemini-1.5-flash',
+          contents: expect.stringContaining('다음 노트 내용을 3-6개의 불릿 포인트로 요약해주세요')
+        })
       );
     });
   });
@@ -150,9 +136,7 @@ describe('GeminiClient', () => {
   describe('generateTags', () => {
     it('노트 내용에서 태그를 생성해야 함', async () => {
       const mockResponse = {
-        response: {
-          text: jest.fn().mockReturnValue('개발, 테스트, AI, 프로그래밍, 기술'),
-        },
+        text: '개발, 테스트, AI, 프로그래밍, 기술',
       };
 
       mockGenerateContent.mockResolvedValue(mockResponse);
@@ -164,15 +148,16 @@ describe('GeminiClient', () => {
       expect(result.data.length).toBeGreaterThan(0);
       expect(result.data.length).toBeLessThanOrEqual(6);
       expect(mockGenerateContent).toHaveBeenCalledWith(
-        expect.stringContaining('다음 노트 내용을 분석하여 관련성 높은 태그를 최대 6개까지 생성해주세요')
+        expect.objectContaining({
+          model: 'gemini-1.5-flash',
+          contents: expect.stringContaining('다음 노트 내용을 분석하여 관련성 높은 태그를 최대 6개까지 생성해주세요')
+        })
       );
     });
 
     it('빈 응답에 대해서도 처리해야 함', async () => {
       const mockResponse = {
-        response: {
-          text: jest.fn().mockReturnValue(''),
-        },
+        text: '',
       };
 
       mockGenerateContent.mockResolvedValue(mockResponse);
@@ -187,9 +172,7 @@ describe('GeminiClient', () => {
   describe('healthCheck', () => {
     it('정상적인 경우 true를 반환해야 함', async () => {
       const mockResponse = {
-        response: {
-          text: jest.fn().mockReturnValue('Hello'),
-        },
+        text: 'Hello',
       };
 
       mockGenerateContent.mockResolvedValue(mockResponse);
@@ -221,13 +204,13 @@ describe('GeminiClient', () => {
     it('API 호출 실패 시 재시도해야 함', async () => {
       // 모킹 초기화
       mockGenerateContent.mockClear();
-      
+
       // 첫 번째와 두 번째 호출은 실패, 세 번째 호출은 성공
       mockGenerateContent
         .mockRejectedValueOnce(new Error('Network Error'))
         .mockRejectedValueOnce(new Error('Network Error'))
         .mockResolvedValueOnce({
-          response: { text: jest.fn().mockReturnValue('Success') }
+          text: 'Success'
         });
 
       const result = await client.generateText('Test prompt');
@@ -239,7 +222,7 @@ describe('GeminiClient', () => {
     it('최대 재시도 횟수 초과 시 에러를 던져야 함', async () => {
       // 모킹 초기화
       mockGenerateContent.mockClear();
-      
+
       // 모든 호출이 실패
       mockGenerateContent.mockRejectedValue(new Error('Persistent Error'));
 

@@ -3,7 +3,7 @@
 // AI 기반 요약 및 태깅 기능을 위한 Gemini API 연동
 // 관련 파일: lib/env.ts, lib/actions/notes.ts, __tests__/ai/gemini.test.ts
 
-import { GoogleGenAI, GenerativeModel } from '@google/genai';
+import { GoogleGenAI } from '@google/genai';
 import { env } from '../env';
 
 // API 에러 타입 정의
@@ -31,10 +31,10 @@ export interface GeminiResponse<T = string> {
 // Gemini API 클라이언트 클래스
 export class GeminiClient {
   private client: GoogleGenAI;
-  private model: GenerativeModel;
   private readonly maxTokens = 8000; // 8k 토큰 제한
   private readonly maxRetries = 3;
   private readonly timeout = 10000; // 10초 타임아웃
+  private readonly modelName = 'gemini-2.0-flash-001';
 
   constructor() {
     // 환경변수 검증
@@ -45,15 +45,6 @@ export class GeminiClient {
     // GoogleGenAI 클라이언트 초기화
     this.client = new GoogleGenAI({
       apiKey: env.GEMINI_API_KEY,
-    });
-
-    // 모델 초기화 (gemini-1.5-flash 사용)
-    this.model = this.client.getGenerativeModel({
-      model: 'gemini-1.5-flash',
-      generationConfig: {
-        maxOutputTokens: 1000, // 응답 최대 토큰 수
-        temperature: 0.7,
-      },
     });
   }
 
@@ -96,95 +87,164 @@ export class GeminiClient {
         return result;
       } catch (error) {
         lastError = error as Error;
-        console.error(`[GeminiClient] ${operationName} - Attempt ${attempt} failed:`, error);
-
-        // 마지막 시도가 아니면 잠시 대기
+        console.warn(`[GeminiClient] ${operationName} - Attempt ${attempt} failed:`, error);
+        
         if (attempt < this.maxRetries) {
-          const delay = Math.pow(2, attempt) * 1000; // 지수 백오프
+          // 지수 백오프: 1초, 2초, 4초
+          const delay = Math.pow(2, attempt - 1) * 1000;
           console.log(`[GeminiClient] ${operationName} - Retrying in ${delay}ms...`);
           await new Promise(resolve => setTimeout(resolve, delay));
         }
       }
     }
 
-    throw new Error(
-      `${operationName} failed after ${this.maxRetries} attempts. Last error: ${lastError?.message}`
-    );
+    throw new Error(`${operationName} failed after ${this.maxRetries} attempts: ${lastError?.message}`);
   }
 
-  // 기본 텍스트 생성 메서드
+  // 기본 텍스트 생성
   async generateText(prompt: string): Promise<GeminiResponse<string>> {
     this.validateTokenLimit(prompt);
 
-    const startTime = Date.now();
-    
-    const result = await this.callWithRetry(async () => {
-      const response = await this.model.generateContent(prompt);
-      return response.response.text();
+    return this.callWithRetry(async () => {
+      const startTime = Date.now();
+      
+      const response = await this.client.models.generateContent({
+        model: this.modelName,
+        contents: prompt,
+        config: {
+          maxOutputTokens: 1000,
+          temperature: 0.7,
+        },
+      });
+
+      const endTime = Date.now();
+      const responseTime = endTime - startTime;
+
+      // 토큰 사용량 추정 (실제 API에서는 정확한 값을 제공하지 않을 수 있음)
+      const promptTokens = this.countTokens(prompt);
+      const responseTokens = this.countTokens(response.text || '');
+      const totalTokens = promptTokens + responseTokens;
+
+      console.log(`[GeminiClient] generateText - Tokens: ${totalTokens}, Time: ${responseTime}ms`);
+
+      return {
+        data: response.text || '',
+        usage: {
+          promptTokens,
+          responseTokens,
+          totalTokens,
+        },
+        model: this.modelName,
+        timestamp: new Date(),
+      };
     }, 'generateText');
-
-    const endTime = Date.now();
-    const duration = endTime - startTime;
-
-    // 토큰 사용량 추적 (대략적)
-    const promptTokens = this.countTokens(prompt);
-    const responseTokens = this.countTokens(result);
-    const totalTokens = promptTokens + responseTokens;
-
-    console.log(`[GeminiClient] generateText completed in ${duration}ms`);
-    console.log(`[GeminiClient] Token usage - Prompt: ${promptTokens}, Response: ${responseTokens}, Total: ${totalTokens}`);
-
-    return {
-      data: result,
-      usage: {
-        promptTokens,
-        responseTokens,
-        totalTokens,
-      },
-      model: 'gemini-1.5-flash',
-      timestamp: new Date(),
-    };
   }
 
-  // 노트 요약 생성 메서드
+  // 노트 요약 생성
   async generateSummary(noteContent: string): Promise<GeminiResponse<string>> {
-    const prompt = `다음 노트 내용을 3-6개의 불릿 포인트로 요약해주세요. 각 포인트는 간결하고 명확해야 합니다:
+    this.validateTokenLimit(noteContent);
 
-${noteContent}
+    const prompt = `다음 노트 내용을 3-6개의 불릿 포인트로 요약해주세요. 핵심 내용만 간결하게 정리해주세요:
 
-요약:`;
+${noteContent}`;
 
-    return this.generateText(prompt);
+    return this.callWithRetry(async () => {
+      const startTime = Date.now();
+      
+      const response = await this.client.models.generateContent({
+        model: this.modelName,
+        contents: prompt,
+        config: {
+          maxOutputTokens: 500,
+          temperature: 0.5,
+        },
+      });
+
+      const endTime = Date.now();
+      const responseTime = endTime - startTime;
+
+      const promptTokens = this.countTokens(prompt);
+      const responseTokens = this.countTokens(response.text || '');
+      const totalTokens = promptTokens + responseTokens;
+
+      console.log(`[GeminiClient] generateSummary - Tokens: ${totalTokens}, Time: ${responseTime}ms`);
+
+      return {
+        data: response.text || '',
+        usage: {
+          promptTokens,
+          responseTokens,
+          totalTokens,
+        },
+        model: this.modelName,
+        timestamp: new Date(),
+      };
+    }, 'generateSummary');
   }
 
-  // 노트 태그 생성 메서드
+  // 노트 태그 생성
   async generateTags(noteContent: string): Promise<GeminiResponse<string[]>> {
-    const prompt = `다음 노트 내용을 분석하여 관련성 높은 태그를 최대 6개까지 생성해주세요. 태그는 쉼표로 구분하고, 한국어로 작성해주세요:
+    this.validateTokenLimit(noteContent);
 
-${noteContent}
+    const prompt = `다음 노트 내용을 분석하여 관련성 높은 태그를 최대 6개까지 생성해주세요. 태그는 쉼표로 구분하여 나열해주세요:
 
-태그:`;
+${noteContent}`;
 
-    const response = await this.generateText(prompt);
-    
-    // 응답을 태그 배열로 변환
-    const tags = response.data
-      .split(',')
-      .map(tag => tag.trim())
-      .filter(tag => tag.length > 0)
-      .slice(0, 6); // 최대 6개로 제한
+    return this.callWithRetry(async () => {
+      const startTime = Date.now();
+      
+      const response = await this.client.models.generateContent({
+        model: this.modelName,
+        contents: prompt,
+        config: {
+          maxOutputTokens: 200,
+          temperature: 0.3,
+        },
+      });
 
-    return {
-      ...response,
-      data: tags,
-    };
+      const endTime = Date.now();
+      const responseTime = endTime - startTime;
+
+      // 태그 파싱
+      const tagsText = response.text || '';
+      const tags = tagsText
+        .split(',')
+        .map(tag => tag.trim())
+        .filter(tag => tag.length > 0)
+        .slice(0, 6); // 최대 6개로 제한
+
+      const promptTokens = this.countTokens(prompt);
+      const responseTokens = this.countTokens(tagsText);
+      const totalTokens = promptTokens + responseTokens;
+
+      console.log(`[GeminiClient] generateTags - Tokens: ${totalTokens}, Time: ${responseTime}ms, Tags: ${tags.length}`);
+
+      return {
+        data: tags,
+        usage: {
+          promptTokens,
+          responseTokens,
+          totalTokens,
+        },
+        model: this.modelName,
+        timestamp: new Date(),
+      };
+    }, 'generateTags');
   }
 
-  // 헬스체크 메서드
+  // API 헬스체크
   async healthCheck(): Promise<boolean> {
     try {
-      await this.generateText('Hello');
-      return true;
+      const response = await this.client.models.generateContent({
+        model: this.modelName,
+        contents: 'Hello',
+        config: {
+          maxOutputTokens: 10,
+          temperature: 0.1,
+        },
+      });
+      
+      return !!response.text;
     } catch (error) {
       console.error('[GeminiClient] Health check failed:', error);
       return false;
@@ -192,15 +252,12 @@ ${noteContent}
   }
 }
 
-// 싱글톤 인스턴스 생성
-let geminiClient: GeminiClient | null = null;
+// 싱글톤 인스턴스 관리
+let geminiClientInstance: GeminiClient | null = null;
 
 export function getGeminiClient(): GeminiClient {
-  if (!geminiClient) {
-    geminiClient = new GeminiClient();
+  if (!geminiClientInstance) {
+    geminiClientInstance = new GeminiClient();
   }
-  return geminiClient;
+  return geminiClientInstance;
 }
-
-// 기본 내보내기
-export default GeminiClient;
