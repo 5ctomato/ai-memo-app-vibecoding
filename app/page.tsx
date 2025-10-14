@@ -35,9 +35,16 @@ export default function Home() {
                 무료로 시작하기
               </Button>
             </Link>
-            <Button variant="outline" size="lg" className="text-lg px-8 py-6">
-              데모 보기
-            </Button>
+            <Link href="/notes">
+              <Button variant="outline" size="lg" className="text-lg px-8 py-6">
+                내 노트 보기
+              </Button>
+            </Link>
+            <Link href="/notes/create">
+              <Button variant="outline" size="lg" className="text-lg px-8 py-6">
+                노트 작성하기
+              </Button>
+            </Link>
           </div>
         </div>
 

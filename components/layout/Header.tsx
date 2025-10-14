@@ -11,6 +11,8 @@ import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { useAuth } from '@/lib/hooks/useAuth'
 import LogoutDialog from '@/components/auth/LogoutDialog'
+import { SearchBar } from '@/components/notes/SearchBar'
+import { Home } from 'lucide-react'
 
 export default function Header() {
   const { user, isLoading } = useAuth()
@@ -19,11 +21,25 @@ export default function Header() {
   return (
     <header className="container mx-auto px-4 py-6">
       <nav className="flex items-center justify-between">
-        <div className="flex items-center space-x-2">
-          <div className="w-8 h-8 bg-indigo-600 rounded-lg flex items-center justify-center">
-            <span className="text-white font-bold text-lg">AI</span>
-          </div>
-          <span className="text-xl font-bold text-gray-900">메모장</span>
+        <div className="flex items-center space-x-4">
+          <Link href="/" className="flex items-center space-x-2 hover:opacity-80 transition-opacity">
+            <div className="w-8 h-8 bg-indigo-600 rounded-lg flex items-center justify-center">
+              <span className="text-white font-bold text-lg">AI</span>
+            </div>
+            <span className="text-xl font-bold text-gray-900">메모장</span>
+          </Link>
+          
+          <Link href="/">
+            <Button variant="ghost" size="sm" className="gap-2">
+              <Home className="h-4 w-4" />
+              홈
+            </Button>
+          </Link>
+        </div>
+        
+        {/* 검색 바 */}
+        <div className="flex-1 max-w-md mx-4">
+          <SearchBar placeholder="노트 검색..." />
         </div>
         
         <div className="flex items-center space-x-4">

@@ -4,16 +4,31 @@
 // 이 파일은 서버 환경에서 Supabase와 상호작용하기 위해 존재합니다
 // 관련 파일: lib/supabase/client.ts, app/auth/signup/actions.ts
 
-import { createServerComponentClient } from '@supabase/auth-helpers-nextjs'
+import { createServerClient } from '@supabase/ssr'
 import { createClient } from '@supabase/supabase-js'
 import { cookies } from 'next/headers'
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
+const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!
 
 // 서버 컴포넌트용 클라이언트 (쿠키 기반)
-export const createServerClient = () => {
-  return createServerComponentClient({ cookies })
+export const createServerSupabaseClient = () => {
+  const cookieStore = cookies()
+  
+  return createServerClient(supabaseUrl, supabaseAnonKey, {
+    cookies: {
+      get(name: string) {
+        return cookieStore.get(name)?.value
+      },
+      set(name: string, value: string, options: any) {
+        cookieStore.set({ name, value, ...options })
+      },
+      remove(name: string, options: any) {
+        cookieStore.set({ name, value: '', ...options })
+      },
+    },
+  })
 }
 
 // 서버 액션용 클라이언트 (서비스 롤 키 사용)
@@ -25,3 +40,6 @@ export const createServiceClient = () => {
     }
   })
 }
+
+// 기존 함수명과의 호환성을 위한 별칭
+export { createServerSupabaseClient as createServerClient }
