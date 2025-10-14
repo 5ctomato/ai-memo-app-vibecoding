@@ -8,6 +8,7 @@ export const env = {
   SUPABASE_URL: process.env.SUPABASE_URL!,
   SUPABASE_ANON_KEY: process.env.SUPABASE_ANON_KEY!,
   DATABASE_URL: process.env.DATABASE_URL!,
+  GEMINI_API_KEY: process.env.GEMINI_API_KEY!,
 } as const;
 
 // 환경 변수 검증 함수
@@ -15,7 +16,8 @@ export function validateEnv() {
   const requiredEnvVars = [
     'SUPABASE_URL',
     'SUPABASE_ANON_KEY', 
-    'DATABASE_URL'
+    'DATABASE_URL',
+    'GEMINI_API_KEY'
   ];
 
   const missingVars = requiredEnvVars.filter(

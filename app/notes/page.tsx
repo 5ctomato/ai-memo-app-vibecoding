@@ -9,20 +9,21 @@ import { getNotes } from '@/lib/actions/notes'
 import { Suspense } from 'react'
 
 interface NotesPageProps {
-  searchParams: {
+  searchParams: Promise<{
     page?: string
     limit?: string
     sortBy?: 'createdAt' | 'updatedAt' | 'title'
     sortOrder?: 'asc' | 'desc'
-  }
+  }>
 }
 
 export default async function NotesPage({ searchParams }: NotesPageProps) {
-  // URL 파라미터 파싱
-  const page = parseInt(searchParams?.page || '1', 10)
-  const limit = parseInt(searchParams?.limit || '10', 10)
-  const sortBy = (searchParams?.sortBy as 'createdAt' | 'updatedAt' | 'title') || 'updatedAt'
-  const sortOrder = (searchParams?.sortOrder as 'asc' | 'desc') || 'desc'
+  // URL 파라미터 파싱 (Next.js 15에서는 searchParams를 await해야 함)
+  const resolvedSearchParams = await searchParams
+  const page = parseInt(resolvedSearchParams?.page || '1', 10)
+  const limit = parseInt(resolvedSearchParams?.limit || '10', 10)
+  const sortBy = (resolvedSearchParams?.sortBy as 'createdAt' | 'updatedAt' | 'title') || 'updatedAt'
+  const sortOrder = (resolvedSearchParams?.sortOrder as 'asc' | 'desc') || 'desc'
 
   // 노트 목록 조회
   const result = await getNotes({
