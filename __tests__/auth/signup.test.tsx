@@ -149,7 +149,115 @@ describe('SignupForm', () => {
     fireEvent.click(submitButton)
     
     await waitFor(() => {
-      expect(screen.getByText('이미 등록된 이메일 주소입니다.')).toBeInTheDocument()
+      expect(screen.getByText('이미 가입된 이메일 주소입니다.')).toBeInTheDocument()
+    })
+  })
+
+  it('비밀번호가 너무 짧은 에러를 처리한다', async () => {
+    // 비밀번호 길이 에러 모킹
+    mockSignUp.mockResolvedValue({
+      data: { user: null },
+      error: { message: 'Password should be at least 6 characters' },
+    })
+
+    render(<SignupForm />)
+    
+    const emailInput = screen.getByLabelText('이메일')
+    const passwordInput = screen.getByLabelText('비밀번호')
+    const confirmPasswordInput = screen.getByLabelText('비밀번호 확인')
+    const submitButton = screen.getByRole('button', { name: '회원가입' })
+    
+    // 유효한 데이터 입력
+    fireEvent.change(emailInput, { target: { value: 'test@example.com' } })
+    fireEvent.change(passwordInput, { target: { value: 'Password123!' } })
+    fireEvent.change(confirmPasswordInput, { target: { value: 'Password123!' } })
+    
+    // 폼 제출
+    fireEvent.click(submitButton)
+    
+    await waitFor(() => {
+      expect(screen.getByText('비밀번호는 최소 6자 이상이어야 합니다.')).toBeInTheDocument()
+    })
+  })
+
+  it('비밀번호가 너무 약한 에러를 처리한다', async () => {
+    // 비밀번호 강도 에러 모킹
+    mockSignUp.mockResolvedValue({
+      data: { user: null },
+      error: { message: 'Password is too weak' },
+    })
+
+    render(<SignupForm />)
+    
+    const emailInput = screen.getByLabelText('이메일')
+    const passwordInput = screen.getByLabelText('비밀번호')
+    const confirmPasswordInput = screen.getByLabelText('비밀번호 확인')
+    const submitButton = screen.getByRole('button', { name: '회원가입' })
+    
+    // 유효한 데이터 입력
+    fireEvent.change(emailInput, { target: { value: 'test@example.com' } })
+    fireEvent.change(passwordInput, { target: { value: 'Password123!' } })
+    fireEvent.change(confirmPasswordInput, { target: { value: 'Password123!' } })
+    
+    // 폼 제출
+    fireEvent.click(submitButton)
+    
+    await waitFor(() => {
+      expect(screen.getByText('비밀번호가 너무 약합니다. 영문, 숫자, 특수문자를 포함해주세요.')).toBeInTheDocument()
+    })
+  })
+
+  it('잘못된 이메일 형식 에러를 처리한다', async () => {
+    // 이메일 형식 에러 모킹
+    mockSignUp.mockResolvedValue({
+      data: { user: null },
+      error: { message: 'Invalid email' },
+    })
+
+    render(<SignupForm />)
+    
+    const emailInput = screen.getByLabelText('이메일')
+    const passwordInput = screen.getByLabelText('비밀번호')
+    const confirmPasswordInput = screen.getByLabelText('비밀번호 확인')
+    const submitButton = screen.getByRole('button', { name: '회원가입' })
+    
+    // 유효한 데이터 입력
+    fireEvent.change(emailInput, { target: { value: 'test@example.com' } })
+    fireEvent.change(passwordInput, { target: { value: 'Password123!' } })
+    fireEvent.change(confirmPasswordInput, { target: { value: 'Password123!' } })
+    
+    // 폼 제출
+    fireEvent.click(submitButton)
+    
+    await waitFor(() => {
+      expect(screen.getByText('올바른 이메일 형식을 입력해주세요.')).toBeInTheDocument()
+    })
+  })
+
+  it('너무 많은 요청 에러를 처리한다', async () => {
+    // Rate limit 에러 모킹
+    mockSignUp.mockResolvedValue({
+      data: { user: null },
+      error: { message: 'Too many requests' },
+    })
+
+    render(<SignupForm />)
+    
+    const emailInput = screen.getByLabelText('이메일')
+    const passwordInput = screen.getByLabelText('비밀번호')
+    const confirmPasswordInput = screen.getByLabelText('비밀번호 확인')
+    const submitButton = screen.getByRole('button', { name: '회원가입' })
+    
+    // 유효한 데이터 입력
+    fireEvent.change(emailInput, { target: { value: 'test@example.com' } })
+    fireEvent.change(passwordInput, { target: { value: 'Password123!' } })
+    fireEvent.change(confirmPasswordInput, { target: { value: 'Password123!' } })
+    
+    // 폼 제출
+    fireEvent.click(submitButton)
+    
+    await waitFor(() => {
+      expect(screen.getByText('너무 많은 요청이 발생했습니다. 잠시 후 다시 시도해주세요.')).toBeInTheDocument()
     })
   })
 

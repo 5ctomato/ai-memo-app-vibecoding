@@ -102,18 +102,61 @@ export default function SignupForm() {
         // 에러 메시지 한국어 변환
         let errorMessage = '회원가입 중 오류가 발생했습니다.'
         
+        // Supabase Auth 에러 코드별 처리
         switch (error.message) {
           case 'User already registered':
-            errorMessage = '이미 등록된 이메일 주소입니다.'
+          case 'Email address is already registered':
+            errorMessage = '이미 가입된 이메일 주소입니다.'
             break
           case 'Password should be at least 6 characters':
             errorMessage = '비밀번호는 최소 6자 이상이어야 합니다.'
             break
           case 'Invalid email':
+          case 'Invalid email address':
             errorMessage = '올바른 이메일 형식을 입력해주세요.'
             break
+          case 'Password is too weak':
+            errorMessage = '비밀번호가 너무 약합니다. 영문, 숫자, 특수문자를 포함해주세요.'
+            break
+          case 'Password should contain at least one uppercase letter':
+            errorMessage = '비밀번호에 대문자가 포함되어야 합니다.'
+            break
+          case 'Password should contain at least one lowercase letter':
+            errorMessage = '비밀번호에 소문자가 포함되어야 합니다.'
+            break
+          case 'Password should contain at least one number':
+            errorMessage = '비밀번호에 숫자가 포함되어야 합니다.'
+            break
+          case 'Password should contain at least one special character':
+            errorMessage = '비밀번호에 특수문자가 포함되어야 합니다.'
+            break
+          case 'Signup is disabled for this instance':
+            errorMessage = '현재 회원가입이 비활성화되어 있습니다.'
+            break
+          case 'Email not confirmed':
+            errorMessage = '이메일 인증이 필요합니다. 이메일을 확인해주세요.'
+            break
+          case 'Invalid credentials':
+            errorMessage = '잘못된 인증 정보입니다.'
+            break
+          case 'Too many requests':
+            errorMessage = '너무 많은 요청이 발생했습니다. 잠시 후 다시 시도해주세요.'
+            break
+          case 'Network error':
+          case 'Failed to fetch':
+            errorMessage = '네트워크 연결을 확인해주세요.'
+            break
           default:
-            errorMessage = error.message
+            // 에러 메시지에 특정 키워드가 포함된 경우 처리
+            if (error.message.includes('email')) {
+              errorMessage = '이메일 관련 오류가 발생했습니다. 이메일 형식을 확인해주세요.'
+            } else if (error.message.includes('password')) {
+              errorMessage = '비밀번호 관련 오류가 발생했습니다. 비밀번호 규칙을 확인해주세요.'
+            } else if (error.message.includes('network') || error.message.includes('fetch')) {
+              errorMessage = '네트워크 연결을 확인해주세요.'
+            } else {
+              errorMessage = `회원가입 중 오류가 발생했습니다: ${error.message}`
+            }
         }
 
         setErrors({ general: errorMessage })
