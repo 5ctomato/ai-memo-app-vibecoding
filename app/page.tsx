@@ -30,11 +30,14 @@ export default function Home() {
             혁신적인 메모 관리 서비스입니다
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
+            {/* 무료로 시작하기 버튼 - 숨김처리됨 */}
+            {/* 
             <Link href="/auth/signup">
               <Button size="lg" className="text-lg px-8 py-6">
                 무료로 시작하기
               </Button>
             </Link>
+            */}
             <Link href="/notes">
               <Button variant="outline" size="lg" className="text-lg px-8 py-6">
                 내 노트 보기
@@ -102,7 +105,8 @@ export default function Home() {
           </Card>
         </div>
 
-        {/* CTA Section */}
+        {/* CTA Section - 주석처리됨 */}
+        {/* 
         <div className="mt-24 text-center">
           <Card className="max-w-2xl mx-auto bg-indigo-50 border-indigo-200">
             <CardHeader>
@@ -120,6 +124,7 @@ export default function Home() {
             </CardContent>
           </Card>
         </div>
+        */}
       </main>
 
       {/* Footer */}
