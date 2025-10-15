@@ -14,6 +14,10 @@ import { DeleteButton } from './DeleteButton'
 import { formatDistanceToNow } from 'date-fns'
 import { ko } from 'date-fns/locale'
 import { ArrowLeft, Edit, Archive, Home } from 'lucide-react'
+import Markdown from 'react-markdown'
+import remarkGfm from 'remark-gfm'
+import rehypeHighlight from 'rehype-highlight'
+import 'highlight.js/styles/github.css'
 
 interface NoteDetailProps {
   note: {
@@ -92,10 +96,72 @@ export function NoteDetail({ note }: NoteDetailProps) {
         </CardHeader>
         <CardContent className="space-y-4">
           {/* 노트 내용 */}
-          <div className="prose prose-gray max-w-none">
-            <div className="whitespace-pre-wrap text-gray-900 leading-relaxed">
-              {note.content || '내용이 없습니다.'}
-            </div>
+          <div className="prose prose-gray max-w-none prose-headings:text-gray-900 prose-p:text-gray-700 prose-strong:text-gray-900 prose-em:text-gray-800 prose-code:text-gray-900 prose-pre:bg-gray-50 prose-pre:border prose-pre:border-gray-200 prose-blockquote:border-l-gray-300 prose-blockquote:text-gray-700 prose-table:text-sm prose-th:bg-gray-50 prose-td:border-gray-200">
+            {note.content ? (
+              <Markdown
+                remarkPlugins={[remarkGfm]}
+                rehypePlugins={[rehypeHighlight]}
+                components={{
+                  // 코드 블록 스타일링
+                  code({ node, inline, className, children, ...props }) {
+                    const match = /language-(\w+)/.exec(className || '')
+                    return !inline && match ? (
+                      <pre className="bg-gray-50 border border-gray-200 rounded-lg p-4 overflow-x-auto">
+                        <code className={className} {...props}>
+                          {children}
+                        </code>
+                      </pre>
+                    ) : (
+                      <code className="bg-gray-100 px-1.5 py-0.5 rounded text-sm font-mono" {...props}>
+                        {children}
+                      </code>
+                    )
+                  },
+                  // 링크 스타일링
+                  a({ href, children, ...props }) {
+                    return (
+                      <a 
+                        href={href} 
+                        className="text-blue-600 hover:text-blue-800 underline" 
+                        target="_blank" 
+                        rel="noopener noreferrer"
+                        {...props}
+                      >
+                        {children}
+                      </a>
+                    )
+                  },
+                  // 테이블 스타일링
+                  table({ children, ...props }) {
+                    return (
+                      <div className="overflow-x-auto">
+                        <table className="min-w-full border-collapse border border-gray-200" {...props}>
+                          {children}
+                        </table>
+                      </div>
+                    )
+                  },
+                  th({ children, ...props }) {
+                    return (
+                      <th className="border border-gray-200 bg-gray-50 px-4 py-2 text-left font-semibold" {...props}>
+                        {children}
+                      </th>
+                    )
+                  },
+                  td({ children, ...props }) {
+                    return (
+                      <td className="border border-gray-200 px-4 py-2" {...props}>
+                        {children}
+                      </td>
+                    )
+                  }
+                }}
+              >
+                {note.content}
+              </Markdown>
+            ) : (
+              <div className="text-gray-500 italic">내용이 없습니다.</div>
+            )}
           </div>
           
           {/* 메타 정보 */}
