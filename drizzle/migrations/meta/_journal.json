@@ -22,6 +22,13 @@
       "when": 1760427483853,
       "tag": "0002_volatile_gabe_jones",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1760502985889,
+      "tag": "0003_gorgeous_rocket_raccoon",
+      "breakpoints": true
     }
   ]
 }

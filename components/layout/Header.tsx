@@ -8,6 +8,7 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
+import { usePathname } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { useAuth } from '@/lib/hooks/useAuth'
 import LogoutDialog from '@/components/auth/LogoutDialog'
@@ -17,6 +18,10 @@ import { Home } from 'lucide-react'
 export default function Header() {
   const { user, loading } = useAuth()
   const [showLogoutDialog, setShowLogoutDialog] = useState(false)
+  const pathname = usePathname()
+  
+  // 노트 관련 페이지에서만 검색 바 표시
+  const shouldShowSearchBar = pathname.startsWith('/notes')
 
   return (
     <header className="container mx-auto px-4 py-6">
@@ -37,10 +42,12 @@ export default function Header() {
           </Link>
         </div>
         
-        {/* 검색 바 */}
-        <div className="flex-1 max-w-md mx-4">
-          <SearchBar placeholder="노트 검색..." />
-        </div>
+        {/* 검색 바 - 노트 관련 페이지에서만 표시 */}
+        {shouldShowSearchBar && (
+          <div className="flex-1 max-w-md mx-4">
+            <SearchBar placeholder="노트 검색..." />
+          </div>
+        )}
         
         <div className="flex items-center space-x-4">
           {loading ? (
@@ -59,12 +66,15 @@ export default function Header() {
             </div>
           ) : (
             <div className="flex items-center space-x-4">
+              {/* 중복 방지를 위해 주석처리 - 메인 섹션의 ConditionalButtons에서 처리 */}
+              {/*
               <Link href="/auth/signup">
                 <Button variant="outline">회원가입</Button>
               </Link>
               <Link href="/auth/login">
                 <Button>로그인</Button>
               </Link>
+              */}
             </div>
           )}
         </div>

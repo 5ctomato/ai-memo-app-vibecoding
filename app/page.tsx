@@ -10,6 +10,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { AuthProvider } from '@/components/providers/AuthProvider'
 import Header from '@/components/layout/Header'
 import { Suspense } from 'react'
+import { ConditionalButtons } from '@/components/home/ConditionalButtons'
 
 export default function Home() {
   return (
@@ -32,26 +33,9 @@ export default function Home() {
             <br />
             혁신적인 메모 관리 서비스입니다
           </p>
-          <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            {/* 무료로 시작하기 버튼 - 숨김처리됨 */}
-            {/* 
-            <Link href="/auth/signup">
-              <Button size="lg" className="text-lg px-8 py-6">
-                무료로 시작하기
-              </Button>
-            </Link>
-            */}
-            <Link href="/notes">
-              <Button variant="outline" size="lg" className="text-lg px-8 py-6">
-                내 노트 보기
-              </Button>
-            </Link>
-            <Link href="/notes/create">
-              <Button variant="outline" size="lg" className="text-lg px-8 py-6">
-                노트 작성하기
-              </Button>
-            </Link>
-          </div>
+          <Suspense fallback={<div className="flex justify-center"><div className="w-32 h-12 bg-gray-200 rounded animate-pulse"></div></div>}>
+            <ConditionalButtons />
+          </Suspense>
         </div>
 
         {/* Features Section */}
