@@ -5,7 +5,7 @@
 // 관련 파일: components/notes/CreateNoteForm.tsx, lib/actions/notes.ts, app/layout.tsx
 
 import Link from 'next/link'
-import { CreateNoteForm } from '@/components/notes/CreateNoteForm'
+import { AdvancedCreateNoteForm } from '@/components/notes/AdvancedCreateNoteForm'
 import { createServerClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
 import { Button } from '@/components/ui/button'
@@ -22,23 +22,8 @@ export default async function CreateNotePage() {
   // }
 
   return (
-    <div className="container mx-auto py-8 px-4 max-w-4xl">
-      <div className="mb-6 flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight">새 노트 작성</h1>
-          <p className="text-muted-foreground mt-2">
-            아이디어나 정보를 기록하고 저장하세요.
-          </p>
-        </div>
-        <Link href="/">
-          <Button variant="outline" className="gap-2">
-            <Home className="h-4 w-4" />
-            홈
-          </Button>
-        </Link>
-      </div>
-      
-      <CreateNoteForm />
+    <div className="container mx-auto py-8 px-4">
+      <AdvancedCreateNoteForm />
     </div>
   )
 }

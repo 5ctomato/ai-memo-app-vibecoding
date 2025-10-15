@@ -5,7 +5,7 @@
 // 관련 파일: lib/actions/notes.ts, components/notes/EditNoteForm.tsx
 
 import { getNoteById } from '@/lib/actions/notes'
-import { EditNoteForm } from '@/components/notes/EditNoteForm'
+import { AdvancedEditNoteForm } from '@/components/notes/AdvancedEditNoteForm'
 import { notFound } from 'next/navigation'
 import { Suspense } from 'react'
 
@@ -39,7 +39,7 @@ export default async function EditNotePage({ params }: EditNotePageProps) {
   return (
     <div className="container mx-auto px-4 py-8">
       <Suspense fallback={<div>로딩 중...</div>}>
-        <EditNoteForm note={result.data} />
+        {result.data && <AdvancedEditNoteForm note={result.data} />}
       </Suspense>
     </div>
   )
