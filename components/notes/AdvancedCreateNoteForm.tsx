@@ -90,13 +90,13 @@ export function AdvancedCreateNoteForm({ className }: AdvancedCreateNoteFormProp
       const result = z.string().min(1, '제목은 필수입니다.').max(200, '제목은 200자 이내로 입력해주세요.').safeParse(value)
       setFormState(prev => ({ 
         ...prev, 
-        titleError: result.success ? null : (result.error.errors[0]?.message || '제목 검증 오류')
+        titleError: result.success ? null : (result.error.issues[0]?.message || '제목 검증 오류')
       }))
     } else if (name === 'content') {
       const result = z.string().max(10000, '본문은 10,000자 이내로 입력해주세요.').safeParse(value)
       setFormState(prev => ({ 
         ...prev, 
-        contentError: result.success ? null : (result.error.errors[0]?.message || '본문 검증 오류')
+        contentError: result.success ? null : (result.error.issues[0]?.message || '본문 검증 오류')
       }))
     }
   }
@@ -328,16 +328,18 @@ export function AdvancedCreateNoteForm({ className }: AdvancedCreateNoteFormProp
                           remarkPlugins={[remarkGfm]}
                           rehypePlugins={[rehypeHighlight]}
                           components={{
-                            code({ node, inline, className, children, ...props }) {
+                            code(props) {
+                              // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                              const { node, inline, className, children, ...restProps } = props as any
                               const match = /language-(\w+)/.exec(className || '')
                               return !inline && match ? (
                                 <pre className="bg-gray-50 border border-gray-200 rounded-lg p-4 overflow-x-auto">
-                                  <code className={className} {...props}>
+                                  <code className={className} {...restProps}>
                                     {children}
                                   </code>
                                 </pre>
                               ) : (
-                                <code className="bg-gray-100 px-1.5 py-0.5 rounded text-sm font-mono" {...props}>
+                                <code className="bg-gray-100 px-1.5 py-0.5 rounded text-sm font-mono" {...restProps}>
                                   {children}
                                 </code>
                               )

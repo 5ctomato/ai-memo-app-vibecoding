@@ -103,16 +103,18 @@ export function NoteDetail({ note }: NoteDetailProps) {
                 rehypePlugins={[rehypeHighlight]}
                 components={{
                   // 코드 블록 스타일링
-                  code({ node, inline, className, children, ...props }) {
+                  code(props) {
+                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                    const { node, inline, className, children, ...restProps } = props as any
                     const match = /language-(\w+)/.exec(className || '')
                     return !inline && match ? (
                       <pre className="bg-gray-50 border border-gray-200 rounded-lg p-4 overflow-x-auto">
-                        <code className={className} {...props}>
+                        <code className={className} {...restProps}>
                           {children}
                         </code>
                       </pre>
                     ) : (
-                      <code className="bg-gray-100 px-1.5 py-0.5 rounded text-sm font-mono" {...props}>
+                      <code className="bg-gray-100 px-1.5 py-0.5 rounded text-sm font-mono" {...restProps}>
                         {children}
                       </code>
                     )

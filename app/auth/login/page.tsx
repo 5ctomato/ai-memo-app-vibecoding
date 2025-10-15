@@ -5,12 +5,15 @@
 // 관련 파일: components/auth/LoginForm.tsx, app/layout.tsx
 
 import LoginForm from '@/components/auth/LoginForm'
+import { Suspense } from 'react'
 
 export default function LoginPage() {
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
       <div className="w-full max-w-md">
-        <LoginForm />
+        <Suspense fallback={<div>로딩 중...</div>}>
+          <LoginForm />
+        </Suspense>
       </div>
     </div>
   )

@@ -12,7 +12,7 @@ import { db } from '@/lib/db'
 import { notes, users, summaries } from '@/drizzle/schema'
 import { createServerClient } from '@/lib/supabase/server'
 import { z } from 'zod'
-import { desc, asc, eq, count, or, like } from 'drizzle-orm'
+import { desc, asc, eq, count, or, like, and } from 'drizzle-orm'
 import { getGeminiClient } from '@/lib/ai/gemini'
 
 // 노트 생성 스키마 정의
@@ -110,7 +110,7 @@ export async function saveNote(formData: FormData) {
     if (error instanceof z.ZodError) {
       return {
         success: false,
-        error: error.errors[0].message
+        error: error.issues[0].message
       }
     }
 
@@ -227,7 +227,7 @@ export async function getNotes(params: {
     if (error instanceof z.ZodError) {
       return {
         success: false,
-        error: error.errors[0].message
+        error: error.issues[0].message
       }
     }
 
@@ -364,7 +364,7 @@ export async function updateNote(noteId: string, formData: FormData) {
     if (error instanceof z.ZodError) {
       return {
         success: false,
-        error: error.errors[0].message
+        error: error.issues[0].message
       }
     }
     
@@ -435,7 +435,7 @@ export async function autoSaveNote(noteId: string, data: { title: string, conten
     if (error instanceof z.ZodError) {
       return {
         success: false,
-        error: error.errors[0].message
+        error: error.issues[0].message
       }
     }
     
@@ -674,8 +674,7 @@ export async function getArchivedNotes(params: {
     const [totalCountResult] = await db
       .select({ count: count() })
       .from(notes)
-      .where(eq(notes.userId, userId))
-      .where(eq(notes.isArchived, true))
+      .where(and(eq(notes.userId, userId), eq(notes.isArchived, true)))
     
     const totalCount = totalCountResult.count
     const totalPages = Math.ceil(totalCount / validatedParams.limit)
@@ -694,8 +693,7 @@ export async function getArchivedNotes(params: {
         updatedAt: notes.updatedAt,
       })
       .from(notes)
-      .where(eq(notes.userId, userId))
-      .where(eq(notes.isArchived, true))
+      .where(and(eq(notes.userId, userId), eq(notes.isArchived, true)))
       .orderBy(sortFunction(sortColumn))
       .limit(validatedParams.limit)
       .offset(offset)
@@ -728,7 +726,7 @@ export async function getArchivedNotes(params: {
     if (error instanceof z.ZodError) {
       return {
         success: false,
-        error: error.errors[0].message
+        error: error.issues[0].message
       }
     }
 
@@ -778,14 +776,14 @@ export async function searchNotes(params: {
     const [totalCountResult] = await db
       .select({ count: count() })
       .from(notes)
-      .where(eq(notes.userId, userId))
-      .where(eq(notes.isArchived, false))
-      .where(
+      .where(and(
+        eq(notes.userId, userId),
+        eq(notes.isArchived, false),
         or(
           like(notes.title, `%${validatedParams.query}%`),
           like(notes.content, `%${validatedParams.query}%`)
         )
-      )
+      ))
     
     const totalCount = totalCountResult.count
     const totalPages = Math.ceil(totalCount / validatedParams.limit)
@@ -804,14 +802,14 @@ export async function searchNotes(params: {
         updatedAt: notes.updatedAt,
       })
       .from(notes)
-      .where(eq(notes.userId, userId))
-      .where(eq(notes.isArchived, false))
-      .where(
+      .where(and(
+        eq(notes.userId, userId),
+        eq(notes.isArchived, false),
         or(
           like(notes.title, `%${validatedParams.query}%`),
           like(notes.content, `%${validatedParams.query}%`)
         )
-      )
+      ))
       .orderBy(sortFunction(sortColumn))
       .limit(validatedParams.limit)
       .offset(offset)
@@ -848,7 +846,7 @@ export async function searchNotes(params: {
     if (error instanceof z.ZodError) {
       return {
         success: false,
-        error: error.errors[0].message
+        error: error.issues[0].message
       }
     }
 

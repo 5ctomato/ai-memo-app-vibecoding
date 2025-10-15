@@ -71,7 +71,7 @@ export function SearchResultsList({
           <div>
             <h1 className="text-2xl font-bold">검색 결과</h1>
             <p className="text-muted-foreground">
-              "{search.query}"에 대한 검색 결과가 없습니다
+              &ldquo;{search.query}&rdquo;에 대한 검색 결과가 없습니다
             </p>
           </div>
           <div className="flex items-center gap-2">
@@ -107,7 +107,7 @@ export function SearchResultsList({
           <div>
             <h1 className="text-2xl font-bold">검색 결과</h1>
             <p className="text-muted-foreground">
-              "{search.query}"에 대한 {search.resultCount}개의 결과
+              &ldquo;{search.query}&rdquo;에 대한 {search.resultCount}개의 결과
             </p>
           </div>
           <div className="flex items-center gap-2">

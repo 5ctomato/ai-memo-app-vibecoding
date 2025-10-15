@@ -8,6 +8,40 @@ import { searchNotes } from '@/lib/actions/notes'
 import { SearchResultsList } from '@/components/notes/SearchResultsList'
 import { Suspense } from 'react'
 
+// 노트 타입 정의
+type Note = {
+  id: string
+  title: string
+  content: string
+  isArchived: boolean
+  createdAt: Date
+  updatedAt: Date
+}
+
+type Pagination = {
+  currentPage: number
+  totalPages: number
+  totalCount: number
+  limit: number
+  hasNextPage: boolean
+  hasPrevPage: boolean
+}
+
+type Sort = {
+  sortBy: 'createdAt' | 'updatedAt' | 'title'
+  sortOrder: 'asc' | 'desc'
+}
+
+type Search = {
+  query: string
+  resultCount: number
+}
+
+// API 응답 타입 정의
+type SearchNotesResult = 
+  | { success: true; data: { notes: Note[]; pagination: Pagination; sort: Sort; search: Search } }
+  | { success: false; error: string }
+
 interface SearchPageProps {
   searchParams: {
     q?: string
@@ -48,7 +82,7 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
     limit,
     sortBy,
     sortOrder,
-  })
+  }) as SearchNotesResult
 
   if (!result.success) {
     return (
@@ -61,14 +95,17 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
     )
   }
 
+  // result.success가 true이므로 result.data는 존재함을 보장
+  const data = result.data
+
   return (
     <div className="container mx-auto px-4 py-8">
       <Suspense fallback={<div>검색 중...</div>}>
         <SearchResultsList
-          notes={result.data.notes}
-          pagination={result.data.pagination}
-          sort={result.data.sort}
-          search={result.data.search}
+          notes={data.notes}
+          pagination={data.pagination}
+          sort={data.sort}
+          search={data.search}
         />
       </Suspense>
     </div>

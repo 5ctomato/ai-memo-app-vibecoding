@@ -166,7 +166,7 @@ export function AdvancedEditNoteForm({ note }: AdvancedEditNoteFormProps) {
   }, [TEMP_SAVE_KEY])
 
   // 실시간 저장을 위한 디바운스 훅
-  const useDebounce = (value: any, delay: number) => {
+  const useDebounce = (value: string, delay: number) => {
     const [debouncedValue, setDebouncedValue] = useState(value)
 
     useEffect(() => {
@@ -182,10 +182,6 @@ export function AdvancedEditNoteForm({ note }: AdvancedEditNoteFormProps) {
     return debouncedValue
   }
 
-  const debouncedFormData = useDebounce(
-    { title: formState.title, content: formState.content },
-    3000
-  )
 
   // 컴포넌트 마운트 시 임시 저장된 데이터 로드
   useEffect(() => {
@@ -200,15 +196,6 @@ export function AdvancedEditNoteForm({ note }: AdvancedEditNoteFormProps) {
       }))
     }
   }, [loadFromLocalStorage])
-
-  // 실시간 저장
-  useEffect(() => {
-    if (debouncedFormData.title !== note.title || debouncedFormData.content !== note.content) {
-      if (debouncedFormData.title.trim() && debouncedFormData.title !== note.title) {
-        handleAutoSave(debouncedFormData)
-      }
-    }
-  }, [debouncedFormData])
 
   const handleAutoSave = useCallback(async (data: { title: string, content: string }) => {
     setSaveStatus('saving')
@@ -228,6 +215,15 @@ export function AdvancedEditNoteForm({ note }: AdvancedEditNoteFormProps) {
     }
   }, [note.id])
 
+  // 실시간 저장
+  useEffect(() => {
+    if (formState.title !== note.title || formState.content !== note.content) {
+      if (formState.title.trim() && formState.title !== note.title) {
+        handleAutoSave(formState)
+      }
+    }
+  }, [formState.title, formState.content, note.title, note.content, handleAutoSave])
+
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target
     setFormState(prev => ({ ...prev, [name]: value, [`${name}Error`]: null, formError: null }))
@@ -243,13 +239,13 @@ export function AdvancedEditNoteForm({ note }: AdvancedEditNoteFormProps) {
       const result = z.string().min(1, '제목은 필수입니다.').max(200, '제목은 200자 이내로 입력해주세요.').safeParse(value)
       setFormState(prev => ({ 
         ...prev, 
-        titleError: result.success ? null : (result.error.errors[0]?.message || '제목 검증 오류')
+        titleError: result.success ? null : (result.error.issues[0]?.message || '제목 검증 오류')
       }))
     } else if (name === 'content') {
       const result = z.string().max(10000, '본문은 10,000자 이내로 입력해주세요.').safeParse(value)
       setFormState(prev => ({ 
         ...prev, 
-        contentError: result.success ? null : (result.error.errors[0]?.message || '본문 검증 오류')
+        contentError: result.success ? null : (result.error.issues[0]?.message || '본문 검증 오류')
       }))
     }
   }
@@ -266,7 +262,7 @@ export function AdvancedEditNoteForm({ note }: AdvancedEditNoteFormProps) {
       clearLocalStorage() // 임시 저장 클리어
       router.push(`/notes/${note.id}`)
     } else {
-      setFormState(prev => ({ ...prev, formError: result.error }))
+      setFormState(prev => ({ ...prev, formError: result.error || null }))
       setSaveStatus('error')
     }
   }
@@ -537,16 +533,18 @@ export function AdvancedEditNoteForm({ note }: AdvancedEditNoteFormProps) {
                           remarkPlugins={[remarkGfm]}
                           rehypePlugins={[rehypeHighlight]}
                           components={{
-                            code({ node, inline, className, children, ...props }) {
+                            code(props) {
+                              // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                              const { node, inline, className, children, ...restProps } = props as any
                               const match = /language-(\w+)/.exec(className || '')
                               return !inline && match ? (
                                 <pre className="bg-gray-50 border border-gray-200 rounded-lg p-4 overflow-x-auto">
-                                  <code className={className} {...props}>
+                                  <code className={className} {...restProps}>
                                     {children}
                                   </code>
                                 </pre>
                               ) : (
-                                <code className="bg-gray-100 px-1.5 py-0.5 rounded text-sm font-mono" {...props}>
+                                <code className="bg-gray-100 px-1.5 py-0.5 rounded text-sm font-mono" {...restProps}>
                                   {children}
                                 </code>
                               )

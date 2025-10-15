@@ -75,7 +75,7 @@ export function RestoreButton({
         <AlertDialogHeader>
           <AlertDialogTitle>노트를 복구하시겠습니까?</AlertDialogTitle>
           <AlertDialogDescription>
-            "{noteTitle}" 노트를 복구하여 일반 노트 목록으로 이동시킵니다.
+            &ldquo;{noteTitle}&rdquo; 노트를 복구하여 일반 노트 목록으로 이동시킵니다.
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>

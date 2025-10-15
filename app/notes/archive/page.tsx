@@ -8,6 +8,35 @@ import { getArchivedNotes } from '@/lib/actions/notes'
 import { ArchivedNotesList } from '@/components/notes/ArchivedNotesList'
 import { Suspense } from 'react'
 
+// 아카이브된 노트 타입 정의
+type ArchivedNote = {
+  id: string
+  title: string
+  content: string
+  isArchived: boolean
+  createdAt: Date
+  updatedAt: Date
+}
+
+type Pagination = {
+  currentPage: number
+  totalPages: number
+  totalCount: number
+  limit: number
+  hasNextPage: boolean
+  hasPrevPage: boolean
+}
+
+type Sort = {
+  sortBy: 'createdAt' | 'updatedAt' | 'title'
+  sortOrder: 'asc' | 'desc'
+}
+
+// API 응답 타입 정의
+type GetArchivedNotesResult = 
+  | { success: true; data: { notes: ArchivedNote[]; pagination: Pagination; sort: Sort } }
+  | { success: false; error: string }
+
 interface ArchivePageProps {
   searchParams: {
     page?: string
@@ -30,7 +59,7 @@ export default async function ArchivePage({ searchParams }: ArchivePageProps) {
     limit,
     sortBy,
     sortOrder,
-  })
+  }) as GetArchivedNotesResult
 
   if (!result.success) {
     return (
@@ -43,13 +72,16 @@ export default async function ArchivePage({ searchParams }: ArchivePageProps) {
     )
   }
 
+  // result.success가 true이므로 result.data는 존재함을 보장
+  const data = result.data
+
   return (
     <div className="container mx-auto px-4 py-8">
       <Suspense fallback={<div>로딩 중...</div>}>
         <ArchivedNotesList
-          notes={result.data.notes}
-          pagination={result.data.pagination}
-          sort={result.data.sort}
+          notes={data.notes}
+          pagination={data.pagination}
+          sort={data.sort}
         />
       </Suspense>
     </div>

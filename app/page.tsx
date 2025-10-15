@@ -9,13 +9,16 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { AuthProvider } from '@/components/providers/AuthProvider'
 import Header from '@/components/layout/Header'
+import { Suspense } from 'react'
 
 export default function Home() {
   return (
     <AuthProvider>
       <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
       {/* Header */}
-      <Header />
+      <Suspense fallback={<div>로딩 중...</div>}>
+        <Header />
+      </Suspense>
 
       {/* Hero Section */}
       <main className="container mx-auto px-4 py-16">
@@ -149,6 +152,7 @@ export default function Home() {
                 <li>AI 요약</li>
                 <li>자동 태깅</li>
                 <li>검색 & 필터</li>
+                <li><Link href="/test-gemini" className="hover:text-white transition-colors">Gemini API 테스트</Link></li>
               </ul>
             </div>
             <div>
@@ -164,10 +168,12 @@ export default function Home() {
             <div>
               <h3 className="font-semibold mb-4">연결</h3>
               <ul className="space-y-2 text-gray-400">
-                <li>GitHub</li>
-                <li>Twitter</li>
-                <li>Discord</li>
-                <li>블로그</li>
+                <li><Link href="https://cursor.directory/" target="_blank" rel="noopener noreferrer" className="hover:text-white transition-colors">Cursor Rules</Link></li>
+                <li><Link href="https://aistudio.google.com/prompts/new_chat" target="_blank" rel="noopener noreferrer" className="hover:text-white transition-colors">Google AI Studio</Link></li>
+                <li><Link href="https://chatgpt.com/" target="_blank" rel="noopener noreferrer" className="hover:text-white transition-colors">ChatGPT</Link></li>
+                <li><Link href="https://onlinemarkdown.com/" target="_blank" rel="noopener noreferrer" className="hover:text-white transition-colors">Online Markdown</Link></li>
+                <li><Link href="https://github.com/bmad-code-org/BMAD-METHOD/blob/main/dist/teams/team-fullstack.txt" target="_blank" rel="noopener noreferrer" className="hover:text-white transition-colors">BMAD-METHOD</Link></li>
+                <li><Link href="https://github.com/" target="_blank" rel="noopener noreferrer" className="hover:text-white transition-colors">GitHub</Link></li>
               </ul>
             </div>
           </div>

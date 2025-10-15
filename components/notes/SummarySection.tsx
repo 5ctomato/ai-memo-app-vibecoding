@@ -43,7 +43,7 @@ export default function SummarySection({ noteId, noteContent }: SummarySectionPr
       
       const result = await getNoteSummary(noteId)
       
-      if (result.success) {
+      if (result.success && result.data) {
         setSummary(result.data)
       } else {
         console.error('요약 조회 실패:', result.error)
@@ -64,7 +64,7 @@ export default function SummarySection({ noteId, noteContent }: SummarySectionPr
       
       const result = await generateSummary(noteId)
       
-      if (result.success) {
+      if (result.success && result.data) {
         setSummary(result.data.summary)
         console.log('요약 생성 성공:', result.data)
       } else {

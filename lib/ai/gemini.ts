@@ -10,7 +10,7 @@ import { env } from '../env';
 export interface GeminiError {
   code: string;
   message: string;
-  details?: any;
+  details?: unknown;
 }
 
 // 토큰 사용량 추적 인터페이스

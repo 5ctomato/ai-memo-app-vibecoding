@@ -15,7 +15,7 @@ import { SearchBar } from '@/components/notes/SearchBar'
 import { Home } from 'lucide-react'
 
 export default function Header() {
-  const { user, isLoading } = useAuth()
+  const { user, loading } = useAuth()
   const [showLogoutDialog, setShowLogoutDialog] = useState(false)
 
   return (
@@ -43,7 +43,7 @@ export default function Header() {
         </div>
         
         <div className="flex items-center space-x-4">
-          {isLoading ? (
+          {loading ? (
             <div className="w-20 h-10 bg-gray-200 rounded animate-pulse"></div>
           ) : user ? (
             <div className="flex items-center space-x-4">
